@@ -2,7 +2,6 @@ var downsize        = require('downsize'),
     hbs             = require('express-hbs'),
     moment          = require('moment'),
     path            = require('path'),
-    polyglot        = require('node-polyglot').instance,
     _               = require('underscore'),
     when            = require('when'),
 
@@ -432,19 +431,23 @@ coreHelpers.meta_description = function (options) {
  * @return String A correctly internationalised string
  */
 coreHelpers.e = function (key, defaultString, options) {
-    var output;
-    when.all([
+    return when.all([
         api.settings.read('defaultLang'),
         api.settings.read('forceI18n')
     ]).then(function (values) {
-        if (values[0].value === 'en'
+        var defaultLang = values[0].value;
+        if (defaultLang === 'en'
                 && _.isEmpty(options.hash)
                 && _.isEmpty(values[1].value)) {
-            output = defaultString;
+            return defaultString;
         } else {
-            output = polyglot().t(key, options.hash);
+            var polyglot = require('node-polyglot').instance,
+                fs = require('fs'),
+                config = require('../../server/config');
+            var langFilePath = config.paths().lang + defaultLang + '.json';
+            polyglot.extend(JSON.parse(fs.readFileSync(langFilePath)));            
+            return polyglot.t(key);
         }
-        return output;
     });
 };
 
