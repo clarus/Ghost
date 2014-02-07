@@ -430,24 +430,22 @@ coreHelpers.meta_description = function (options) {
  * @param {Object} options
  * @return String A correctly internationalised string
  */
-coreHelpers.e = function (key, defaultString, options) {
+coreHelpers.t = function (key) {
     return when.all([
         api.settings.read('defaultLang'),
         api.settings.read('forceI18n')
     ]).then(function (values) {
-        var defaultLang = values[0].value;
-        if (defaultLang === 'en'
-                && _.isEmpty(options.hash)
-                && _.isEmpty(values[1].value)) {
-            return defaultString;
-        } else {
-            var polyglot = require('node-polyglot').instance,
-                fs = require('fs'),
-                config = require('../../server/config');
-            var langFilePath = config.paths().lang + defaultLang + '.json';
-            polyglot.extend(JSON.parse(fs.readFileSync(langFilePath)));            
-            return polyglot.t(key);
+        var defaultLang = values[0].value,
+            forceI18n = values[1].value;
+        if (! forceI18n) {
+            defaultLang = "en_US";
         }
+        var polyglot = require('node-polyglot').instance,
+            fs = require('fs'),
+            config = require('../../server/config');
+        var langFilePath = config.paths().lang + defaultLang + '.json';
+        polyglot.extend(JSON.parse(fs.readFileSync(langFilePath)));            
+        return polyglot.t(key);
     });
 };
 
@@ -653,8 +651,6 @@ registerHelpers = function (adminHbs, assetHash) {
 
     registerAsyncThemeHelper('body_class', coreHelpers.body_class);
 
-    registerAsyncThemeHelper('e', coreHelpers.e);
-
     registerAsyncThemeHelper('ghost_foot', coreHelpers.ghost_foot);
 
     registerAsyncThemeHelper('ghost_head', coreHelpers.ghost_head);
@@ -678,6 +674,8 @@ registerHelpers = function (adminHbs, assetHash) {
     registerAdminHelper('adminUrl', coreHelpers.adminUrl);
 
     registerAsyncAdminHelper('updateNotification', coreHelpers.updateNotification);
+
+    registerAsyncAdminHelper('t', coreHelpers.t);
 };
 
 module.exports = coreHelpers;
